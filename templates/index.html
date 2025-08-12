@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Realtime Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+	body { font-family: Arial, sans-serif; margin: 20px; }
+	canvas { width: 100%; max-height: 40vh; }
+	.controls { margin: 16px 0; display: flex; gap: 8px; }
+	.charts { display: flex; flex-direction: column; gap: 24px; }
+	.status { margin-left: 12px; font-size: 0.9rem; color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Realtime Displacement & Temperature Dashboard</h1>
+
+  <div class="controls">
+	<button id="startBtn">Start</button>
+	<button id="stopBtn">Stop</button>
+	<button id="exportBtn">Export CSV</button>
+	<span class="status" id="statusText">Status: idle</span>
+  </div>
+
+  <div class="charts">
+	<div>
+	  <h3>Dial Indicators (mm)</h3>
+	  <canvas id="dialChart"></canvas>
+	</div>
+	<div>
+	  <h3>Temperature (°C)</h3>
+	  <canvas id="tempChart"></canvas>
+	</div>
+  </div>
+
+	<script>
+		// --- Config ---
+		const POLL_MS = 1000;       // poll /api/data every 1s
+		const MAX_POINTS = 600;     // ~10 minutes at 1 Hz
+		const PLOT_WHEN_IDLE = false; // set true to always see live; false = only plot during logging
+	
+		// --- State ---
+		let isLogging = false;
+	
+		// Per-group state keyed by sensorId so we don’t collide on label
+		const dialState = { labels: [], series: {} }; // series[sensorId] = { label, units, data: [] }
+		const tempState = { labels: [], series: {} };
+	
+		// --- Charts (same as before) ---
+		const dialCtx = document.getElementById('dialChart').getContext('2d');
+		const tempCtx = document.getElementById('tempChart').getContext('2d');
+	
+		function makeChart(ctx, yLabel) {
+		return new Chart(ctx, {
+			type: 'line',
+			data: { labels: [], datasets: [] },
+			options: {
+			responsive: true,
+			animation: false,
+			interaction: { mode: 'nearest', intersect: false },
+			scales: {
+				x: { title: { display: true, text: 'Local Time' } },
+				y: { title: { display: true, text: yLabel } }
+			},
+			plugins: { legend: { display: true } }
+			}
+		});
+		}
+	
+		const dialChart = makeChart(dialCtx, 'Displacement (mm)');
+		const tempChart = makeChart(tempCtx, 'Temperature (°C)');
+	
+		// --- Helpers ---
+		function setStatusText() {
+		const el = document.getElementById('statusText');
+		el.textContent = `Status: ${isLogging ? 'logging…' : 'idle'}`;
+		el.style.color = isLogging ? '#0a0' : '#555';
+		}
+	
+		// Keep one common timestamp per poll for ALL sensors (prevents double labels)
+		function pushPoint(group, chart, tsLabel, sensorId, sensorLabel, value, units) {
+		// Add shared label once per tick
+		const labels = group.labels;
+		if (labels.length === 0 || labels[labels.length - 1] !== tsLabel) {
+			labels.push(tsLabel);
+			if (labels.length > MAX_POINTS) labels.shift();
+		}
+	
+		// Ensure a series exists for this sensor
+		if (!group.series[sensorId]) {
+			group.series[sensorId] = { label: sensorLabel || sensorId, units, data: [] };
+			chart.data.datasets.push({
+			label: sensorLabel || sensorId,
+			data: [],
+			fill: false,
+			_sensorId: sensorId // <- track by id
+			});
+		}
+	
+		const s = group.series[sensorId];
+		s.data.push(value);
+		if (s.data.length > MAX_POINTS) s.data.shift();
+	
+		// Rebuild chart arrays by sensorId
+		chart.data.labels = labels.slice();
+		chart.data.datasets.forEach(d => {
+			const series = group.series[d._sensorId];
+			d.data = series ? series.data.slice() : [];
+		});
+	
+		chart.update();
+		}
+	
+		function toLocalTimeLabel(isoUtc) {
+		return new Date(isoUtc).toLocaleTimeString();
+		}
+	
+		// --- API ---
+		async function getStatus() {
+		const r = await fetch('/api/status');
+		if (!r.ok) throw new Error('GET /api/status failed');
+		return r.json();
+		}
+	
+		async function fetchData() {
+		const r = await fetch('/api/data');
+		if (!r.ok) throw new Error('GET /api/data failed');
+		return r.json();
+		}
+	
+		async function startLogging() {
+		try {
+			const r = await fetch('/api/start', { method: 'POST' });
+			console.log('POST /api/start', r.status);
+			if (r.ok) {
+			isLogging = true;
+			// Clear previous plotting window on new run (optional)
+			if (!PLOT_WHEN_IDLE) {
+				dialState.labels = []; dialState.series = {};
+				tempState.labels = []; tempState.series = {};
+				dialChart.data.labels = []; dialChart.data.datasets = [];
+				tempChart.data.labels = []; tempChart.data.datasets = [];
+				dialChart.update(); tempChart.update();
+			}
+			}
+		} catch (e) { console.error(e); }
+		setStatusText();
+		}
+	
+		async function stopLogging() {
+		try {
+			const r = await fetch('/api/stop', { method: 'POST' });
+			console.log('POST /api/stop', r.status);
+			if (r.ok) isLogging = false;
+		} catch (e) { console.error(e); }
+		setStatusText();
+		}
+	
+		async function exportLog() {
+		const res = await fetch('/api/export');
+		if (!res.ok) { alert('No log file found.'); return; }
+		const blob = await res.blob();
+		const url = window.URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		const disp = res.headers.get('Content-Disposition') || '';
+		const m = disp.match(/filename="?([^"]+)"?/);
+		a.download = m ? m[1] : 'log.csv';
+		a.click();
+		URL.revokeObjectURL(url);
+		}
+	
+		// --- Polling ---
+		async function pollStatus() {
+		try {
+			const s = await getStatus();
+			isLogging = !!s.logging;
+			setStatusText();
+		} catch (e) {
+			console.error(e);
+		}
+		}
+	
+		async function tick() {
+		try {
+			const data = await fetchData();
+			// Use ONE local timestamp for this tick for all sensors
+			// Prefer the newest sensor timestamp if you want; simplest is "now"
+			const tsLabel = new Date().toLocaleTimeString();
+	
+			// Only plot during logging unless you set PLOT_WHEN_IDLE=true
+			if (!isLogging && !PLOT_WHEN_IDLE) return;
+	
+			// data: { sensorId: { sensor_value, timestamp (ISO), sensor_type, sensor_label, sensor_units, sample_name } }
+			for (const [sensorId, s] of Object.entries(data)) {
+			const isTemp = (s.sensor_type || '').toLowerCase() === 'temperature';
+			const group = isTemp ? tempState : dialState;
+			const chart = isTemp ? tempChart : dialChart;
+			pushPoint(group, chart, tsLabel, sensorId, s.sensor_label, s.sensor_value, s.sensor_units);
+			}
+		} catch (e) {
+			console.error(e);
+		}
+		}
+	
+		// --- Wire up buttons ---
+		document.getElementById('startBtn').addEventListener('click', startLogging);
+		document.getElementById('stopBtn').addEventListener('click', stopLogging);
+		document.getElementById('exportBtn').addEventListener('click', exportLog);
+	
+		// --- Kickoff ---
+		setStatusText();
+		pollStatus();                    // get initial status from backend
+		setInterval(pollStatus, 2000);   // refresh status every 2s
+		setInterval(tick, POLL_MS);      // live data loop
+	</script>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+timestamp,sensor_id,sensor_type,sensor_label,sensor_units,sample_name,sensor_value
+1754678073.6526265,28-00000abcde01,temperature,Temp #1,°C,HDPE,23.7
+1754678073.6526265,usb-dial-001,dial,Dial #1,mm,HDPE,2.14
+1754678074.6528382,28-00000abcde01,temperature,Temp #1,°C,HDPE,23.7
+1754678074.6528382,usb-dial-001,dial,Dial #1,mm,HDPE,2.14
+1754678075.6529481,28-00000abcde01,temperature,Temp #1,°C,HDPE,23.7
+1754678075.6529481,usb-dial-001,dial,Dial #1,mm,HDPE,2.14
+1754678076.6530821,28-00000abcde01,temperature,Temp #1,°C,HDPE,23.7
+1754678076.6530821,usb-dial-001,dial,Dial #1,mm,HDPE,2.14
+1754678077.6531665,28-00000abcde01,temperature,Temp #1,°C,HDPE,23.7
+1754678077.6531665,usb-dial-001,dial,Dial #1,mm,HDPE,2.14

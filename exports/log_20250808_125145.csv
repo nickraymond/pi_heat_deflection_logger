@@ -1,0 +1,17 @@
+timestamp,sensor_id,sensor_type,sensor_label,sensor_units,sample_name,sensor_value
+1754682684.4667192,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,23.375
+1754682684.7626276,28-000008ae5436,temperature,Temp #2,°C,PHA-testtest,23.0
+1754682687.2191617,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,23.375
+1754682687.474702,28-000008ae5436,temperature,Temp #2,°C,PHA-testtest,23.0
+1754682689.9386976,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,23.375
+1754682690.1946745,28-000008ae5436,temperature,Temp #2,°C,PHA-testtest,23.0
+1754682692.6592522,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,23.375
+1754682692.914617,28-000008ae5436,temperature,Temp #2,°C,PHA-testtest,23.0
+1754682695.3786914,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,23.375
+1754682695.674637,28-000008ae5436,temperature,Temp #2,°C,PHA-testtest,23.0
+1754682698.0987198,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,23.375
+1754682698.35462,28-000008ae5436,temperature,Temp #2,°C,PHA-testtest,23.0
+1754682700.818702,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,23.375
+1754682701.0747056,28-000008ae5436,temperature,Temp #2,°C,PHA-testtest,23.0
+1754682703.5387113,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,23.375
+1754682703.7946243,28-000008ae5436,temperature,Temp #2,°C,PHA-testtest,23.0
