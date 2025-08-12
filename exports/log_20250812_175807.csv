@@ -1,0 +1,7 @@
+timestamp,sensor_id,sensor_type,sensor_label,sensor_units,sample_name,sensor_value
+1755021457.445035,dial_1_manual_entry,dial_indicator,Manual Dial 1,mm,,3.25
+1755021457.445035,dial_2_manual_entry,dial_indicator,Manual Dial 2,mm,,3.55
+1755021467.04349,dial_1_manual_entry,dial_indicator,Manual Dial 1,mm,,3.6
+1755021467.04349,dial_2_manual_entry,dial_indicator,Manual Dial 2,mm,,3.45
+1755021484.952549,dial_1_manual_entry,dial_indicator,Manual Dial 1,mm,,1.23
+1755021484.952549,dial_2_manual_entry,dial_indicator,Manual Dial 2,mm,,2.34
