@@ -24,6 +24,19 @@ class SensorConfig:
 				"sensor_type": "dial",
 				"sensor_units": "mm",
 				"sample_name": "PHA"
+			},
+			# ✅ Manual entry IDs
+			"dial_1_manual_entry": {
+				"sensor_label": "Manual Dial 1",
+				"sensor_type": "dial_indicator",
+				"sensor_units": "mm",
+				"sample_name": ""
+			},
+			"dial_2_manual_entry": {
+				"sensor_label": "Manual Dial 2",
+				"sensor_type": "dial_indicator",
+				"sensor_units": "mm",
+				"sample_name": ""
 			}
 		}
 
