@@ -2,52 +2,109 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Realtime Dashboard</title>
+  <title>Realtime Displacement & Temperature Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
 	body { font-family: Arial, sans-serif; margin: 20px; }
-	canvas { width: 100%; max-height: 40vh; }
-	.controls { margin: 16px 0; display: flex; gap: 8px; }
-	.charts { display: flex; flex-direction: column; gap: 24px; }
-	.status { margin-left: 12px; font-size: 0.9rem; color: #555; }
+	header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+	header img { height: 36px; width: auto; }
+	h1 { margin: 0; }
 
-	/* Manual entry block */
-	#manual-dial-entry { margin-bottom: 1rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
-	#manual-dial-entry h2 { margin-top: 0; }
-	#manual-dial-entry .row { display: flex; align-items: center; gap: .5rem; margin: .5rem 0; }
-	#manual-dial-entry input { max-width: 10rem; padding: .4rem .6rem; }
-	#saveDialBtn { padding: .5rem .9rem; }
+	canvas { width: 100%; max-height: 40vh; }
+	.charts { display: flex; flex-direction: column; gap: 24px; }
+
+	#top-panel { margin-bottom: 1rem; padding: 1rem; border: 1px solid #ddd; border-radius: 10px; }
+	#panel-grid {
+	  display: grid;
+	  grid-template-columns: 1fr 1fr;
+	  gap: 16px;
+	  align-items: start;
+	}
+	.card {
+	  border: 1px solid #ddd;
+	  border-radius: 10px;
+	  padding: 12px;
+	  background: #fff;
+	}
+	.card h2 { margin: 0 0 8px 0; }
+
+	.row { display: flex; align-items: center; gap: .5rem; margin: .5rem 0; }
+	input[type="text"], input[type="number"] { max-width: 14rem; padding: .4rem .6rem; }
+	#saveDialBtn { padding: .5rem .9rem; margin-top: 8px; }
 	#dialSaveMsg { margin-top: .5rem; }
 	.hidden { display: none; }
 	.error { border-color: #c00; }
+
+	.controls {
+	  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+	  margin-top: 12px; padding-top: 12px; border-top: 1px dashed #ddd;
+	}
+	.status { font-size: 0.9rem; color: #555; }
+
+	/* Theme + footer at the very bottom */
+	#theme.card .row { align-items: center; }
+	#theme input[type="color"] { width: 40px; height: 28px; padding: 0; border: none; background: none; }
+	#saveThemeBtn { padding: .35rem .7rem; }
+
+	footer {
+	  margin-top: 14px;
+	  display: flex;
+	  align-items: center;
+	  gap: 8px;
+	  color: #444;
+	  font-size: 0.95rem;
+	}
+	footer a { color: #0A4A8A; text-decoration: none; }
+	footer a:hover { text-decoration: underline; }
+	.gh-icon { width: 20px; height: 20px; vertical-align: middle; }
   </style>
 </head>
 <body>
-  <h1>Realtime Displacement & Temperature Dashboard</h1>
+  <header>
+	<img src="/logo.png" alt="Sofar Ocean Logo" onerror="this.style.display='none'">
+	<h1>Realtime Displacement & Temperature Dashboard</h1>
+  </header>
 
-  <!-- Manual Dial Entry UI (ABOVE the charts) -->
-  <section id="manual-dial-entry" class="card">
-	<h2>Dial Indicator Manual Entry</h2>
-	<form id="dialForm" onsubmit="return handleManualDialSave(event)">
-	  <div class="row">
-		<label for="dial1">Dial 1 (mm)</label>
-		<input id="dial1" name="dial_1" type="number" step="0.01" inputmode="decimal" placeholder="e.g., 3.25" />
+  <section id="top-panel">
+	<div id="panel-grid">
+	  <!-- LEFT: Samples + controls -->
+	  <div id="samples" class="card">
+		<h2>Samples</h2>
+		<div class="row">
+		  <label for="sample1Input">Sample 1 ID</label>
+		  <input id="sample1Input" type="text" placeholder="e.g., HDPE-123" />
+		</div>
+		<div class="row">
+		  <label for="sample2Input">Sample 2 ID</label>
+		  <input id="sample2Input" type="text" placeholder="e.g., PHA-456" />
+		</div>
+		<div class="controls">
+		  <button id="startBtn">Start</button>
+		  <button id="stopBtn">Stop</button>
+		  <button id="exportBtn">Export CSV</button>
+		  <span class="status" id="statusText">Status: idle</span>
+		  <span class="status" id="sampleStatus">Samples: S1=—, S2=—</span>
+		</div>
 	  </div>
-	  <div class="row">
-		<label for="dial2">Dial 2 (mm)</label>
-		<input id="dial2" name="dial_2" type="number" step="0.01" inputmode="decimal" placeholder="e.g., 3.30" />
+
+	  <!-- RIGHT: Manual Dial Entry -->
+	  <div id="manual-dial" class="card">
+		<h2>Dial Indicator Manual Entry</h2>
+		<form id="dialForm" onsubmit="return handleManualDialSave(event)">
+		  <div class="row">
+			<label for="dial1">Dial 1 (mm)</label>
+			<input id="dial1" name="dial_1" type="number" step="0.01" inputmode="decimal" placeholder="e.g., 3.25" />
+		  </div>
+		  <div class="row">
+			<label for="dial2">Dial 2 (mm)</label>
+			<input id="dial2" name="dial_2" type="number" step="0.01" inputmode="decimal" placeholder="e.g., 3.30" />
+		  </div>
+		  <button id="saveDialBtn" type="submit">Save Measurement</button>
+		</form>
+		<div id="dialSaveMsg" class="hidden" role="status" aria-live="polite">✔ Saved!</div>
 	  </div>
-	  <button id="saveDialBtn" type="submit">Save Measurement</button>
-	</form>
-	<div id="dialSaveMsg" class="hidden" role="status" aria-live="polite">✔ Saved!</div>
+	</div>
   </section>
-
-  <div class="controls">
-	<button id="startBtn">Start</button>
-	<button id="stopBtn">Stop</button>
-	<button id="exportBtn">Export CSV</button>
-	<span class="status" id="statusText">Status: idle</span>
-  </div>
 
   <div class="charts">
 	<div>
@@ -60,23 +117,66 @@
 	</div>
   </div>
 
+  <!-- Theme configuration moved to the very bottom -->
+  <section id="theme" class="card" style="max-width: 520px; margin: 18px 0;">
+	<h2>Theme</h2>
+	<div class="row">
+	  <label for="colorA">Dial 1 / Temp 1</label>
+	  <input type="color" id="colorA" value="#0A4A8A">
+	  <label for="colorB" style="margin-left: 1rem;">Dial 2 / Temp 2</label>
+	  <input type="color" id="colorB" value="#2E86FF">
+	  <button id="saveThemeBtn" type="button">Save Theme</button>
+	  <span class="status" id="themeMsg" style="margin-left:.5rem;"></span>
+	</div>
+  </section>
+
+  <!-- Footer with GitHub link -->
+  <footer>
+	<!-- inline SVG GitHub icon so no external asset is needed -->
+	<svg class="gh-icon" viewBox="0 0 16 16" aria-hidden="true">
+	  <path fill="currentColor" d="M8 .2a8 8 0 0 0-2.53 15.6c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.24-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.96 0-.88.31-1.6.82-2.17-.08-.2-.36-1.01.08-2.1 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.09.16 1.9.08 2.1.51.57.82 1.29.82 2.17 0 3.08-1.87 3.76-3.65 3.96.29.25.54.74.54 1.49 0 1.08-.01 1.94-.01 2.2 0 .21.15.45.55.38A8 8 0 0 0 8 .2z"/>
+	</svg>
+	<a href="https://github.com/nickraymond/pi_heat_deflection_logger" target="_blank" rel="noopener">
+	  View source on GitHub: nickraymond/pi_heat_deflection_logger
+	</a>
+  </footer>
+
   <script>
 	// --- Config ---
-	const POLL_MS = 1000;          // poll /api/data every 1s
-	const MAX_POINTS = 600;        // ~10 minutes at 1 Hz
-	const PLOT_WHEN_IDLE = false;  // true = always render; false = only during logging
+	const POLL_MS = 1000;
+	const MAX_POINTS = 600;
+	const PLOT_WHEN_IDLE = false;
+
+	// IDs for color pairing
+	const TEMP1_ID = "28-000008ae0bbd";
+	const TEMP2_ID = "28-000008ae5436";
+	const DIAL1_MANUAL_ID = "dial_1_manual_entry";
+	const DIAL2_MANUAL_ID = "dial_2_manual_entry";
+	const DIAL1_USB = "usb-dial-001";
+	const DIAL2_USB = "usb-dial-002";
+
+	// Theme (loaded from server)
+	let THEME = { colorA: "#0A4A8A", colorB: "#2E86FF" };
+
+	function colorFor(sensorId) {
+	  if ([DIAL1_MANUAL_ID, DIAL1_USB, TEMP1_ID].includes(sensorId)) return THEME.colorA;
+	  if ([DIAL2_MANUAL_ID, DIAL2_USB, TEMP2_ID].includes(sensorId)) return THEME.colorB;
+	  return undefined;
+	}
 
 	// --- State ---
 	let isLogging = false;
-
-	// Track last ISO timestamp we plotted per sensor -> prevents flat lines
 	const lastIsoBySensor = {};
-
-	// Per-group state keyed by sensorId so we don’t collide on label
-	const dialState = { labels: [], series: {} }; // series[sensorId] = { label, units, data: [] }
+	const dialState = { labels: [], series: {} };
 	const tempState = { labels: [], series: {} };
 
-	// --- Charts ---
+	// DOM
+	const sample1Input = document.getElementById('sample1Input');
+	const sample2Input = document.getElementById('sample2Input');
+	const colorAInput = document.getElementById('colorA');
+	const colorBInput = document.getElementById('colorB');
+	const themeMsg = document.getElementById('themeMsg');
+
 	const dialCtx = document.getElementById('dialChart').getContext('2d');
 	const tempCtx = document.getElementById('tempChart').getContext('2d');
 
@@ -88,7 +188,7 @@
 		  responsive: true,
 		  animation: false,
 		  interaction: { mode: 'nearest', intersect: false },
-		  spanGaps: false, // show gaps instead of drawing a line across missing data
+		  spanGaps: false,
 		  scales: {
 			x: { title: { display: true, text: 'Local Time' } },
 			y: { title: { display: true, text: yLabel } }
@@ -101,14 +201,21 @@
 	const dialChart = makeChart(dialCtx, 'Displacement (mm)');
 	const tempChart = makeChart(tempCtx, 'Temperature (°C)');
 
-	// --- Helpers ---
 	function setStatusText() {
 	  const el = document.getElementById('statusText');
 	  el.textContent = `Status: ${isLogging ? 'logging…' : 'idle'}`;
 	  el.style.color = isLogging ? '#0a0' : '#555';
 	}
 
-	// Adds a point for a single sensor, using one shared x-label per “tick”
+	function setSampleStatus(s1, s2) {
+	  document.getElementById('sampleStatus').textContent = `Samples: S1=${s1 || '—'}, S2=${s2 || '—'}`;
+	}
+
+	function setSampleInputsDisabled(disabled) {
+	  sample1Input.disabled = disabled;
+	  sample2Input.disabled = disabled;
+	}
+
 	function pushPoint(group, chart, tsLabel, sensorId, sensorLabel, value, units) {
 	  const labels = group.labels;
 	  if (labels.length === 0 || labels[labels.length - 1] !== tsLabel) {
@@ -116,13 +223,18 @@
 		if (labels.length > MAX_POINTS) labels.shift();
 	  }
 
-	  // Ensure a series exists for this sensor
 	  if (!group.series[sensorId]) {
+		const c = colorFor(sensorId);
 		group.series[sensorId] = { label: sensorLabel || sensorId, units, data: [] };
 		chart.data.datasets.push({
 		  label: sensorLabel || sensorId,
 		  data: [],
 		  fill: false,
+		  borderColor: c,
+		  pointBackgroundColor: c,
+		  pointBorderColor: c,
+		  borderWidth: 2,
+		  pointRadius: 2,
 		  _sensorId: sensorId
 		});
 	  }
@@ -131,7 +243,6 @@
 	  s.data.push(value);
 	  if (s.data.length > MAX_POINTS) s.data.shift();
 
-	  // Rebuild chart arrays by sensorId
 	  chart.data.labels = labels.slice();
 	  chart.data.datasets.forEach(d => {
 		const series = group.series[d._sensorId];
@@ -143,24 +254,56 @@
 
 	// --- API ---
 	async function getStatus() {
-	  const r = await fetch('/api/status');
-	  if (!r.ok) throw new Error('GET /api/status failed');
+	  const r = await fetch('/api/status'); if (!r.ok) throw new Error('GET /api/status failed'); return r.json();
+	}
+	async function fetchData() {
+	  const r = await fetch('/api/data'); if (!r.ok) throw new Error('GET /api/data failed'); return r.json();
+	}
+	async function getTheme() {
+	  const r = await fetch('/api/theme'); if (!r.ok) return { colorA: "#0A4A8A", colorB: "#2E86FF" };
 	  return r.json();
 	}
-
-	async function fetchData() {
-	  const r = await fetch('/api/data');
-	  if (!r.ok) throw new Error('GET /api/data failed');
-	  return r.json();
+	async function saveTheme() {
+	  const payload = { colorA: colorAInput.value, colorB: colorBInput.value };
+	  const r = await fetch('/api/theme', {
+		method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+	  });
+	  if (r.ok) {
+		THEME = await r.json();
+		themeMsg.textContent = 'Saved';
+		setTimeout(() => themeMsg.textContent = '', 1500);
+		// Update existing datasets with new colors
+		[dialChart, tempChart].forEach(chart => {
+		  chart.data.datasets.forEach(ds => {
+			const c = colorFor(ds._sensorId);
+			if (c) {
+			  ds.borderColor = c;
+			  ds.pointBackgroundColor = c;
+			  ds.pointBorderColor = c;
+			}
+		  });
+		  chart.update();
+		});
+	  } else {
+		themeMsg.textContent = 'Save failed';
+	  }
 	}
 
 	async function startLogging() {
+	  const s1 = sample1Input.value.trim();
+	  const s2 = sample2Input.value.trim();
+	  if (!s1 || !s2) { alert('Please enter Sample 1 and Sample 2 IDs before starting.'); return; }
 	  try {
-		const r = await fetch('/api/start', { method: 'POST' });
+		const r = await fetch('/api/start', {
+		  method: 'POST', headers: { 'Content-Type': 'application/json' },
+		  body: JSON.stringify({ sample1: s1, sample2: s2 })
+		});
 		if (r.ok) {
-		  isLogging = true;
+		  const data = await r.json();
+		  isLogging = !!data.logging;
+		  setSampleInputsDisabled(true);
+		  setSampleStatus(data.sample1, data.sample2);
 		  if (!PLOT_WHEN_IDLE) {
-			// Reset plotting window on new run (optional)
 			Object.keys(lastIsoBySensor).forEach(k => delete lastIsoBySensor[k]);
 			dialState.labels = []; dialState.series = {};
 			tempState.labels = []; tempState.series = {};
@@ -168,6 +311,8 @@
 			tempChart.data.labels = []; tempChart.data.datasets = [];
 			dialChart.update(); tempChart.update();
 		  }
+		} else {
+		  alert(await r.text() || 'Failed to start');
 		}
 	  } catch (e) { console.error(e); }
 	  setStatusText();
@@ -176,7 +321,7 @@
 	async function stopLogging() {
 	  try {
 		const r = await fetch('/api/stop', { method: 'POST' });
-		if (r.ok) isLogging = false;
+		if (r.ok) { isLogging = false; setSampleInputsDisabled(false); setSampleStatus('', ''); }
 	  } catch (e) { console.error(e); }
 	  setStatusText();
 	}
@@ -201,58 +346,53 @@
 		const s = await getStatus();
 		isLogging = !!s.logging;
 		setStatusText();
-	  } catch (e) {
-		console.error(e);
-	  }
+		setSampleStatus(s.sample1, s.sample2);
+		if (isLogging) {
+		  if (s.sample1 !== undefined) sample1Input.value = s.sample1 || '';
+		  if (s.sample2 !== undefined) sample2Input.value = s.sample2 || '';
+		}
+		setSampleInputsDisabled(isLogging);
+	  } catch (e) { console.error(e); }
 	}
 
 	async function tick() {
 	  try {
 		const data = await fetchData();
-
-		// Only plot during logging unless you set PLOT_WHEN_IDLE=true
 		if (!isLogging && !PLOT_WHEN_IDLE) return;
-
-		// For each sensor, only add a point if timestamp changed
-		// Also use the sensor's timestamp as the x-axis label so points align to save time
 		for (const [sensorId, s] of Object.entries(data)) {
-		  const iso = s.timestamp;               // ISO string from backend
-		  const lastIso = lastIsoBySensor[sensorId];
-
-		  if (lastIso === iso) continue;         // nothing new for this sensor
-
-		  lastIsoBySensor[sensorId] = iso;       // mark as plotted
+		  const iso = s.timestamp;
+		  if (lastIsoBySensor[sensorId] === iso) continue;
+		  lastIsoBySensor[sensorId] = iso;
 		  const tsLabel = new Date(iso).toLocaleTimeString();
-
 		  const isTemp = (s.sensor_type || '').toLowerCase() === 'temperature';
 		  const group = isTemp ? tempState : dialState;
 		  const chart = isTemp ? tempChart : dialChart;
-
 		  pushPoint(group, chart, tsLabel, sensorId, s.sensor_label, s.sensor_value, s.sensor_units);
 		}
-	  } catch (e) {
-		console.error(e);
-	  }
+	  } catch (e) { console.error(e); }
 	}
 
-	// Called after a successful manual save to redraw immediately
-	window.reloadDialPlot = function () {
-	  tick(); // draw immediately instead of waiting up to 1s
-	};
-
-	// --- Wire up buttons ---
+	// Wire up
 	document.getElementById('startBtn').addEventListener('click', startLogging);
 	document.getElementById('stopBtn').addEventListener('click', stopLogging);
 	document.getElementById('exportBtn').addEventListener('click', exportLog);
+	document.getElementById('saveThemeBtn').addEventListener('click', saveTheme);
+	window.reloadDialPlot = function () { tick(); };
 
-	// --- Kickoff ---
-	setStatusText();
-	pollStatus();
-	setInterval(pollStatus, 2000);
-	setInterval(tick, POLL_MS);
+	// Init: load theme then start loops
+	(async function init() {
+	  try {
+		THEME = await getTheme();
+		colorAInput.value = THEME.colorA;
+		colorBInput.value = THEME.colorB;
+	  } catch {}
+	  setStatusText();
+	  pollStatus();
+	  setInterval(pollStatus, 2000);
+	  setInterval(tick, POLL_MS);
+	})();
   </script>
 
-  <!-- Manual entry logic (save + confirmation + chart refresh) -->
   <script src="/static/js/manual_dial.js"></script>
 </body>
 </html>
