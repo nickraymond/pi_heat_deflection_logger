@@ -1,3 +1,0 @@
-timestamp,sensor_id,sensor_type,sensor_label,sensor_units,sample_name,sensor_value
-2025-08-08T21:30:59.187331+00:00,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,25.312
-2025-08-08T21:30:59.187419+00:00,28-000008ae5436,temperature,Temp #2,°C,PHA-testtest,24.0

@@ -83,26 +83,60 @@ def api_theme_post():
 
 
 # ---------- Live data ----------
+# --- helper: normalize timestamp to epoch float ---
+def _to_epoch(ts):
+	"""Return epoch seconds as float from mixed timestamp formats, or None."""
+	if isinstance(ts, (int, float)):
+		return float(ts)
+	if isinstance(ts, str):
+		s = ts.strip()
+		# numeric string?
+		try:
+			return float(s)
+		except ValueError:
+			pass
+		# ISO string?
+		try:
+			if s.endswith("Z"):
+				s = s[:-1] + "+00:00"
+			dt = datetime.fromisoformat(s)
+			if dt.tzinfo is None:
+				dt = dt.astimezone()
+			return dt.timestamp()
+		except Exception:
+			return None
+	return None
+
+
 @app.get("/api/data")
 def api_data():
-	latest = engine.get_latest_data()
+	# Start with the engine's view
+	latest = engine.get_latest_data()  # {sensor_id: {"timestamp": epoch(float), "sensor_value": x}}
+	# Merge in newest values from the in-memory log (manual entries, etc.)
 	seen = set()
 	for row in reversed(engine.logger.data):
 		sid = row.get("sensor_id")
 		if not sid or sid in seen:
 			continue
-		ts_epoch = row.get("timestamp")
+		ts_epoch = _to_epoch(row.get("timestamp"))
 		val = row.get("sensor_value")
+		# Accept either 'sensor_value' or legacy 'value'
+		if val is None:
+			val = row.get("value")
 		if ts_epoch is not None and val is not None:
 			latest[sid] = {"timestamp": ts_epoch, "sensor_value": val}
 			seen.add(sid)
 
+	# Format response expected by the frontend
 	formatted = {}
 	for sensor_id, entry in latest.items():
-		ts_epoch = entry["timestamp"]
+		ts_epoch = _to_epoch(entry.get("timestamp"))
+		if ts_epoch is None:
+			# skip malformed
+			continue
 		ts_iso = datetime.fromtimestamp(ts_epoch, tz=timezone.utc).isoformat()
 		formatted[sensor_id] = {
-			"sensor_value": entry["sensor_value"],
+			"sensor_value": entry.get("sensor_value"),
 			"timestamp": ts_iso,
 			"sensor_type": sensor_config.get_sensor_type(sensor_id),
 			"sensor_label": sensor_config.get_sensor_label(sensor_id),
@@ -248,44 +282,50 @@ def api_export():
 		"sample_name", "value"
 	])
 
+	rows_written = 0
 	for row in history:
-		ts_epoch = row.get("timestamp")
+		ts_epoch = _to_epoch(row.get("timestamp"))
 		if ts_epoch is None:
+			# skip malformed timestamps
 			continue
 
 		dt_utc = datetime.fromtimestamp(ts_epoch, tz=timezone.utc)
 		ts_utc = dt_utc.isoformat()
 		ts_local = dt_utc.astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
-		sensor_id = row.get("sensor_id", "")
 		value = row.get("sensor_value", row.get("value", ""))
 
 		writer.writerow([
 			f"{ts_epoch:.6f}", ts_utc, ts_local,
-			sensor_id,
+			row.get("sensor_id", ""),
 			row.get("sensor_type", ""),
 			row.get("sensor_label", ""),
 			row.get("sensor_units", ""),
 			row.get("sample_name", ""),
 			value
 		])
+		rows_written += 1
+
+	if rows_written == 0:
+		return jsonify({"error": "No valid rows to export"}), 400
 
 	csv_text = output.getvalue()
 	output.close()
 
-	# Save a copy to exports/ with timestamped filename (UTC)
+	# Save a copy to exports/ with a UTC timestamped filename
+	os.makedirs("exports", exist_ok=True)
 	fname = "log_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S") + ".csv"
-	_ensure_dir(os.path.join("exports", "x.csv"))
 	disk_path = os.path.join("exports", fname)
 	with open(disk_path, "w", encoding="utf-8", newline="") as f:
 		f.write(csv_text)
 
-	# Also return the file to the browser
+	# Return the same file to the browser
 	return Response(
 		csv_text.encode("utf-8"),
 		mimetype="text/csv",
 		headers={"Content-Disposition": f"attachment; filename={fname}"},
 	)
+
 
 
 if __name__ == "__main__":

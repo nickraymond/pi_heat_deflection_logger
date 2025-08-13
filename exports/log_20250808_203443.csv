@@ -1,3 +1,0 @@
-timestamp,sensor_id,sensor_type,sensor_label,sensor_units,sample_name,sensor_value
-2025-08-08T20:34:43.575578+00:00,28-000008ae0bbd,temperature,Temp #1,°C,HDPE-testtest,22.5
-2025-08-08T20:34:43.575624+00:00,usb-dial-001,dial,Dial #1,mm,HDPE,0.12

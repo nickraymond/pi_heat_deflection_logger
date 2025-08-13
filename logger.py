@@ -38,7 +38,8 @@ class DataLogger:
 		
 		for sensor_id, info in sensor_data.items():
 			self.data.append({
-				'timestamp': datetime.now(timezone.utc).isoformat(),
+				# 'timestamp': datetime.now(timezone.utc).isoformat(),
+				'timestamp': info.get('timestamp') or time.time(),  # store epoch float
 				'sensor_id': sensor_id,
 				'sensor_type': self.config.get_sensor_type(sensor_id),
 				'sensor_label': self.config.get_sensor_label(sensor_id),
