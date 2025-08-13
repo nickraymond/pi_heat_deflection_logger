@@ -25,18 +25,18 @@ class SensorConfig:
 				"sensor_units": "mm",
 				"sample_name": "PHA"
 			},
-			# ✅ Manual entry IDs
+			# ---- Manual entry sensors (virtual) ----
 			"dial_1_manual_entry": {
 				"sensor_label": "Manual Dial 1",
 				"sensor_type": "dial_indicator",
 				"sensor_units": "mm",
-				"sample_name": ""
+				"sample_name": ""   # set at /api/start
 			},
 			"dial_2_manual_entry": {
 				"sensor_label": "Manual Dial 2",
 				"sensor_type": "dial_indicator",
 				"sensor_units": "mm",
-				"sample_name": ""
+				"sample_name": ""   # set at /api/start
 			}
 		}
 

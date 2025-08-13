@@ -65,9 +65,6 @@
 		showMsg(true, '✔ Saved');
 		if(typeof window.reloadDialPlot === 'function'){
 		  window.reloadDialPlot();
-		} else {
-		  const img = document.querySelector('#plot-container img');
-		  if(img){ img.src = img.src.split('?')[0] + `?t=${Date.now()}`; }
 		}
 	  } else {
 		showMsg(false, (data && data.error) || 'Save failed');
@@ -81,6 +78,5 @@
 	return false;
   }
 
-  // Expose handler
   window.handleManualDialSave = handleManualDialSave;
 })();

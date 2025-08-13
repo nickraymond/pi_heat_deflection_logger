@@ -1,0 +1,15 @@
+cat > .gitignore << 'EOF'
+# Python
+__pycache__/
+*.pyc
+
+# Runtime/exported data
+exports/*.csv
+exports/data_log.csv
+
+# Local config generated at runtime
+config/theme.json
+
+# OS cruft
+.DS_Store
+EOF
